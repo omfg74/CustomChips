@@ -3,12 +3,13 @@ package com.example.customchipslayout
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
+import android.os.Build
 import android.util.AttributeSet
-import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.TextView
+import androidx.annotation.RequiresApi
+import androidx.core.content.ContextCompat
 
 class CHipsLayout : FrameLayout {
     constructor(context: Context) : this(context, null)
@@ -25,50 +26,86 @@ class CHipsLayout : FrameLayout {
     private var top: Int? = null
     private var right: Int? = null
     private var bottom: Int? = null
+    private var paddingLeft: Int? = null
+    private var paddingRight: Int? = null
+    private var paddingTop: Int? = null
+    private var paddingBottom: Int? = null
+    private var totalLineCount: Int? = 2
+    private var bgResource: Int? = null
+    private var itemWidth: Int? = null
+    private var itemHeight: Int? = null
 
     fun setMargins(left: Int?, top: Int?, right: Int?, bottom: Int?) {
         this.left = dp(left)
-        this.left = dp(right)
-        this.left = dp(top)
-        this.left = dp(bottom)
+        this.right = dp(right)
+        this.top = dp(top)
+        this.bottom = dp(bottom)
     }
 
-    fun setRowCount(count: Int?) {
-
+    fun setPaddings(left: Int?, top: Int?, right: Int?, bottom: Int?) {
+        paddingLeft = left
+        paddingRight = right
+        paddingTop = top
+        paddingBottom = bottom
     }
 
-    fun setBackgroundColor(bgrColor: String?) {
+    fun setLineCount(count: Int?) {
+        totalLineCount = count
+    }
 
+    fun setBackground(backgroundResource: Int?) {
+        bgResource = backgroundResource
+    }
+
+    fun setViewSize(width: Int?, height: Int?) {
+        itemWidth = width
+        itemHeight = height
     }
 
 
+    @SuppressLint("DrawAllocation")
+    @RequiresApi(Build.VERSION_CODES.JELLY_BEAN)
     override fun onDraw(canvas: Canvas?) {
         super.onDraw(canvas)
+
         for (i in 0 until childCount) {
-            val lp: FrameLayout.LayoutParams =
-                LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(36).toInt())
+            val lp: FrameLayout.LayoutParams=
+             if (itemWidth != null || itemHeight == null) {
+                LayoutParams(dp(itemWidth), ViewGroup.LayoutParams.WRAP_CONTENT)
+            } else if (itemWidth == null || itemHeight != null) {
+                LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, dp(itemHeight))
+            } else if (itemWidth == null || itemHeight == null) {
+                LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+            } else {
+                LayoutParams(
+                    dp(itemWidth),
+                    dp(itemHeight)
+                )
+            }
             val child = getChildAt(i)
-//            child.setBackgroundColor(Color.parseColor("#F2F5F9"))
-            child.setBackgroundColor(Color.RED)
+            child.background = ContextCompat.getDrawable(context, R.drawable.bgr_chips)
             var margins = 0
             var extraTopMargin = 0
-            var dropChild = 0
+            var lineCount = 0
             for (j in 0 until indexOfChild(child)) {
-                val m = (getChildAt(j + dropChild) as TextView).measure(0, 0)
+                val m = (getChildAt(j) as TextView).measure(0, 0)
                 margins += (getChildAt(j) as TextView).measuredWidth
                 if ((margins + ((left ?: 0) * indexOfChild(child))) > this.width) {
                     extraTopMargin = child.measuredHeight
-                    dropChild = indexOfChild(child)
+                    lineCount++
                     margins = 0
                 }
             }
             lp.setMargins(
                 (left ?: 0) + margins + (left ?: 0) * indexOfChild(child),
-                (top ?: 0) + extraTopMargin,
+                ((top ?: 0) * (1 + lineCount)) + extraTopMargin,
                 right ?: 0,
                 bottom ?: 0
             )
-            child.setPadding(dp(12), dp(10), dp(12), dp(10))
+            child.setPadding(dp(paddingLeft), dp(paddingTop), dp(paddingRight), dp(paddingBottom))
             child.layoutParams = lp
 
         }
